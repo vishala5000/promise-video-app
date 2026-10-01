@@ -1,1 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center">
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Promise Video Generator"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="#e94560"
+        android:layout_marginBottom="32dp"/>
+
+    <EditText
+        android:id="@+id/etCount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/hint_count"
+        android:inputType="number"
+        android:textColor="#ffffff"
+        android:textColorHint="#aaaaaa"
+        android:backgroundTint="#e94560"
+        android:layout_marginBottom="24dp"/>
+
+    <Button
+        android:id="@+id/btnGenerate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/generate"
+        android:backgroundTint="#e94560"
+        android:textColor="#ffffff"
+        android:layout_marginBottom="24dp"/>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:progressTint="#e94560"/>
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ready. Downloading assets..."
+        android:textAlignment="center"
+        android:textSize="16sp"
+        android:textColor="#cccccc"/>
+
+</LinearLayout>

@@ -112,7 +112,7 @@ class VideoGenerator(private val context: Context) {
         val command = "-y -framerate 30 -i $framesPattern -c:v libx264 -pix_fmt yuv420p -s 1080x1920 -t 5 $outputPath"
         val session = FFmpegKit.execute(command)
         
-        framesDir.listFiles()?.forEach { it.delete() } // Cleanup frames
+        framesDir.listFiles()?.forEach { it.delete() }
         return ReturnCode.isSuccess(session.returnCode)
     }
 }

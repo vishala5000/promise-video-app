@@ -37,21 +37,22 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        # Added --stacktrace and --info to show exact errors if the build fails
-        run: ./gradlew assembleRelease --stacktrace --info
+        # --stacktrace ensures that if it fails, we see the exact Java/Kotlin error
+        run: ./gradlew clean assembleRelease --stacktrace
 
-      - name: Debug APK Output
-        # This step will print out exactly what was generated, helping us debug if it still fails
+      - name: Debug APK Output (Always Runs)
+        # This runs even if the build fails, so we can see exactly what went wrong
+        if: always()
         run: |
-          echo "🔍 Searching for generated APKs..."
-          find app/build -name "*.apk" || true
-          echo "📁 Contents of release directory:"
-          ls -la app/build/outputs/apk/release/ || true
+          echo "🔍 Searching for ALL generated APKs in the entire workspace..."
+          find . -type f -name "*.apk"
+          
+          echo "📁 Full recursive contents of app/build/outputs:"
+          ls -laR app/build/outputs/ || echo "outputs directory does not exist!"
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: promise-video-app-release-apk
           path: app/build/outputs/apk/release/app-release.apk
-          # CRITICAL FIX: Fail the workflow explicitly if the APK is missing, so we know it didn't silently succeed
           if-no-files-found: error

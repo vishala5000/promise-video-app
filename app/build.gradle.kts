@@ -19,7 +19,7 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // CRITICAL FIX: Use debug signing config for CI to ensure the APK is actually generated
+            // CRITICAL: Forces APK generation in CI without a production keystore
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -31,6 +31,13 @@ android {
     
     kotlinOptions {
         jvmTarget = "17"
+    }
+
+    // Prevent packaging conflicts with the FFmpeg AAR
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
     }
 }
 

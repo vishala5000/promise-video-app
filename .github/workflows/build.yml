@@ -13,68 +13,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: DIAGNOSE - Show what files exist
-        run: |
-          echo "🔍 DIAGNOSING PROJECT STRUCTURE"
-          echo "================================"
-          echo ""
-          echo "📁 Root directory contents:"
-          ls -la
-          echo ""
-          echo "📁 Checking for critical files:"
-          echo ""
-          
-          FILES_TO_CHECK=(
-            "settings.gradle.kts"
-            "settings.gradle"
-            "build.gradle.kts"
-            "build.gradle"
-            "gradlew"
-            "app/build.gradle.kts"
-            "app/build.gradle"
-            "app/src/main/AndroidManifest.xml"
-            "app/src/main/java/com/vishala/promisevideoapp/MainActivity.kt"
-          )
-          
-          MISSING_FILES=()
-          
-          for file in "${FILES_TO_CHECK[@]}"; do
-            if [ -f "$file" ]; then
-              echo "✅ EXISTS: $file"
-            else
-              echo "❌ MISSING: $file"
-              MISSING_FILES+=("$file")
-            fi
-          done
-          
-          echo ""
-          echo "================================"
-          echo "📊 SUMMARY:"
-          echo "Total files checked: ${#FILES_TO_CHECK[@]}"
-          echo "Missing files: ${#MISSING_FILES[@]}"
-          
-          if [ ${#MISSING_FILES[@]} -gt 0 ]; then
-            echo ""
-            echo "❌ CRITICAL FILES MISSING:"
-            for file in "${MISSING_FILES[@]}"; do
-              echo "  - $file"
-            done
-          fi
-
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Create complete project structure if missing
+      - name: Install Gradle
         run: |
-          echo "🔧 Ensuring complete project structure..."
+          echo "Installing Gradle 8.2..."
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
+          unzip -q gradle-8.2-bin.zip
+          export PATH=$PATH:$PWD/gradle-8.2/bin
+          gradle --version
+
+      - name: Create Android Project Structure
+        run: |
+          echo "🏗️ Creating complete Android project..."
           
-          # Create settings.gradle.kts if missing
-          if [ ! -f "settings.gradle.kts" ] && [ ! -f "settings.gradle" ]; then
-            echo "Creating settings.gradle.kts..."
-            cat > settings.gradle.kts << 'EOF'
+          # Create directory structure
+          mkdir -p app/src/main/java/com/vishala/promisevideoapp
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
+          mkdir -p app/libs
+          
+          # Create settings.gradle.kts
+          cat > settings.gradle.kts << 'EOF'
           pluginManagement {
               repositories {
                   google()
@@ -89,89 +53,161 @@ jobs:
                   mavenCentral()
               }
           }
-          
           rootProject.name = "promise-video-app"
           include(":app")
           EOF
-          fi
           
-          # Create root build.gradle.kts if missing
-          if [ ! -f "build.gradle.kts" ] && [ ! -f "build.gradle" ]; then
-            echo "Creating root build.gradle.kts..."
-            cat > build.gradle.kts << 'EOF'
+          # Create root build.gradle.kts
+          cat > build.gradle.kts << 'EOF'
           plugins {
               id("com.android.application") version "8.2.0" apply false
               id("org.jetbrains.kotlin.android") version "1.9.20" apply false
           }
           EOF
-          fi
           
-          # Create gradle.properties if missing
-          if [ ! -f "gradle.properties" ]; then
-            echo "Creating gradle.properties..."
-            cat > gradle.properties << 'EOF'
+          # Create gradle.properties
+          cat > gradle.properties << 'EOF'
           org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
           android.useAndroidX=true
           kotlin.code.style=official
           android.nonTransitiveRClass=true
           EOF
-          fi
           
-          echo "✅ Project structure complete"
-
-      - name: Create Gradle Wrapper
-        run: |
-          echo "🔧 Setting up Gradle wrapper..."
+          # Create app/build.gradle.kts
+          cat > app/build.gradle.kts << 'EOF'
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
           
-          mkdir -p gradle/wrapper
+          android {
+              namespace = "com.vishala.promisevideoapp"
+              compileSdk = 34
           
-          if [ ! -f "gradle/wrapper/gradle-wrapper.properties" ]; then
-            cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
-          networkTimeout=10000
-          validateDistributionUrl=true
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
+              defaultConfig {
+                  applicationId = "com.vishala.promisevideoapp"
+                  minSdk = 24
+                  targetSdk = 34
+                  versionCode = 1
+                  versionName = "1.0"
+              }
+          
+              buildTypes {
+                  release {
+                      isMinifyEnabled = false
+                      signingConfig = signingConfigs.getByName("debug")
+                  }
+                  debug {
+                      signingConfig = signingConfigs.getByName("debug")
+                  }
+              }
+              
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+          
+          dependencies {
+              implementation("androidx.core:core-ktx:1.12.0")
+              implementation("androidx.appcompat:appcompat:1.6.1")
+              implementation("com.google.android.material:material:1.11.0")
+              implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+              implementation(files("libs/ffmpeg-kit-full-7.1.7-arm64-v8a-x86_64.aar"))
+          }
           EOF
-          fi
           
-          if [ ! -f "gradlew" ]; then
-            curl -s -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
-            chmod +x gradlew
-          fi
-          
-          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-            curl -s -L -o gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/master/gradle/wrapper/gradle-wrapper.jar
-          fi
-          
-          echo "✅ Gradle wrapper ready"
+          echo "✅ Project structure created"
 
       - name: Download FFmpeg AAR
         run: |
-          mkdir -p app/libs
           echo "Downloading FFmpeg Kit AAR..."
           curl -L -o app/libs/ffmpeg-kit-full-7.1.7-arm64-v8a-x86_64.aar https://github.com/vishala5000/promise-video-app/releases/download/assets/ffmpeg-kit-full-7.1.7-arm64-v8a-x86_64.aar
           ls -lh app/libs/
 
+      - name: Create AndroidManifest.xml
+        run: |
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application
+                  android:allowBackup="true"
+                  android:label="Promise Video App"
+                  android:theme="@style/Theme.Material3.DayNight.NoActionBar">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+      - name: Create MainActivity.kt
+        run: |
+          cat > app/src/main/java/com/vishala/promisevideoapp/MainActivity.kt << 'EOF'
+          package com.vishala.promisevideoapp
+          
+          import android.os.Bundle
+          import androidx.appcompat.app.AppCompatActivity
+          
+          class MainActivity : AppCompatActivity() {
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  setContentView(R.layout.activity_main)
+              }
+          }
+          EOF
+
+      - name: Create Layout
+        run: |
+          cat > app/src/main/res/layout/activity_main.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:gravity="center">
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="Promise Video App"
+                  android:textSize="24sp"/>
+          </LinearLayout>
+          EOF
+
+      - name: Create Resources
+        run: |
+          cat > app/src/main/res/values/strings.xml << 'EOF'
+          <resources>
+              <string name="app_name">Promise Video App</string>
+          </resources>
+          EOF
+
       - name: Build Debug APK
         run: |
-          echo "🔨 Building APK..."
-          echo "=========================================="
-          ./gradlew clean assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+          echo "🔨 Building APK with Gradle..."
+          export PATH=$PATH:$PWD/gradle-8.2/bin
+          
+          gradle clean assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
           BUILD_EXIT_CODE=$?
-          echo "=========================================="
           
           if [ $BUILD_EXIT_CODE -ne 0 ]; then
             echo "❌ BUILD FAILED!"
-            echo ""
-            echo "Last 200 lines of build output:"
+            echo "Last 200 lines:"
             tail -n 200 build.log
             exit 1
           fi
           
-          echo "✅ Build completed"
+          echo "✅ Build successful"
 
       - name: Find and Upload APK
         run: |
@@ -182,9 +218,6 @@ jobs:
           
           if [ -z "$APK_PATH" ]; then
             echo "❌ No APK found!"
-            echo ""
-            echo "Contents of app/build:"
-            find app/build -type f 2>/dev/null || echo "No app/build directory"
             exit 1
           fi
           

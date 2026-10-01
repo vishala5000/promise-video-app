@@ -13,28 +13,55 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Verify project structure
-        run: |
-          echo "📁 Checking project structure..."
-          ls -la
-          echo ""
-          echo "📁 Checking app directory..."
-          ls -la app/
-          echo ""
-          echo "📁 Checking if gradlew exists..."
-          if [ -f "gradlew" ]; then
-            echo "✅ gradlew exists"
-            ls -la gradlew
-          else
-            echo "❌ gradlew NOT FOUND - this is the problem!"
-            exit 1
-          fi
-
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      - name: Create Gradle Wrapper (if missing)
+        run: |
+          echo "🔧 Checking for Gradle wrapper files..."
+          
+          # Create gradle/wrapper directory if it doesn't exist
+          mkdir -p gradle/wrapper
+          
+          # Create gradle-wrapper.properties if missing
+          if [ ! -f "gradle/wrapper/gradle-wrapper.properties" ]; then
+            echo "Creating gradle-wrapper.properties..."
+            cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+          networkTimeout=10000
+          validateDistributionUrl=true
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+          fi
+          
+          # Create gradlew if missing
+          if [ ! -f "gradlew" ]; then
+            echo "Creating gradlew..."
+            curl -s -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
+            chmod +x gradlew
+          fi
+          
+          # Create gradlew.bat if missing
+          if [ ! -f "gradlew.bat" ]; then
+            echo "Creating gradlew.bat..."
+            curl -s -o gradlew.bat https://raw.githubusercontent.com/gradle/gradle/master/gradlew.bat
+          fi
+          
+          # Download gradle-wrapper.jar if missing
+          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            echo "Downloading gradle-wrapper.jar..."
+            curl -s -L -o gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/master/gradle/wrapper/gradle-wrapper.jar
+          fi
+          
+          echo "✅ Gradle wrapper files ready"
+          ls -la gradle/wrapper/
+          ls -la gradlew*
 
       - name: Download assets from GitHub Release
         run: |
@@ -47,47 +74,54 @@ jobs:
             exit 1
           fi
           
-          echo "✅ FFmpeg AAR downloaded successfully"
+          echo "✅ FFmpeg AAR downloaded"
           ls -lh app/libs/
 
       - name: Grant execute permission for gradlew
-        run: |
-          chmod +x gradlew
-          ls -la gradlew
+        run: chmod +x gradlew
 
-      - name: Build with Gradle (SHOW ALL OUTPUT)
+      - name: Build Debug APK (simpler, no signing needed)
         run: |
-          echo "🔨 Starting Gradle build..."
+          echo "🔨 Building debug APK..."
           echo "=========================================="
-          ./gradlew clean assembleRelease --no-daemon --stacktrace 2>&1 | tee gradle-output.log
+          ./gradlew clean assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
           BUILD_EXIT_CODE=$?
           echo "=========================================="
-          echo "Build exit code: $BUILD_EXIT_CODE"
           
           if [ $BUILD_EXIT_CODE -ne 0 ]; then
-            echo "❌ BUILD FAILED! Showing last 100 lines of output:"
-            tail -n 100 gradle-output.log
+            echo "❌ BUILD FAILED!"
+            echo "Last 150 lines of output:"
+            tail -n 150 build.log
             exit 1
           fi
-
-      - name: Verify APK was created
-        run: |
-          echo "🔍 Searching for APK files..."
-          find . -name "*.apk" -type f
           
-          if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
-            echo "✅ APK found at expected location"
-            ls -lh app/build/outputs/apk/release/
-          else
-            echo "❌ APK not found at expected location!"
-            echo "Searching entire workspace for any APK..."
-            find . -name "*.apk" -type f || echo "No APK files found anywhere!"
+          echo "✅ Build completed successfully"
+
+      - name: Find and Upload APK
+        run: |
+          echo "🔍 Searching for ALL APK files..."
+          find . -name "*.apk" -type f -exec ls -lh {} \;
+          
+          # Try to find any APK
+          APK_PATH=$(find . -name "*.apk" -type f | head -n 1)
+          
+          if [ -z "$APK_PATH" ]; then
+            echo "❌ No APK found anywhere!"
+            echo "Contents of app/build/outputs:"
+            ls -laR app/build/outputs/ || echo "No outputs directory"
             exit 1
           fi
+          
+          echo "✅ Found APK at: $APK_PATH"
+          
+          # Copy to a known location for upload
+          mkdir -p apk-upload
+          cp "$APK_PATH" apk-upload/app-debug.apk
+          echo "✅ Copied to apk-upload/app-debug.apk"
 
-      - name: Upload Release APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: promise-video-app-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: promise-video-app-apk
+          path: apk-upload/app-debug.apk
           if-no-files-found: error

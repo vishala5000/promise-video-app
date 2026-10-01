@@ -19,20 +19,16 @@
         android:id="@+id/etCount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/hint_count"
+        android:hint="How many? (Leave blank for ALL unique)"
         android:inputType="number"
-        android:textColor="#ffffff"
-        android:textColorHint="#aaaaaa"
-        android:backgroundTint="#e94560"
         android:layout_marginBottom="24dp"/>
 
     <Button
         android:id="@+id/btnGenerate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/generate"
+        android:text="Generate Videos"
         android:backgroundTint="#e94560"
-        android:textColor="#ffffff"
         android:layout_marginBottom="24dp"/>
 
     <ProgressBar
@@ -40,16 +36,14 @@
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:progressTint="#e94560"/>
+        android:layout_marginBottom="16dp"/>
 
     <TextView
         android:id="@+id/tvStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Ready. Downloading assets..."
+        android:text="Ready"
         android:textAlignment="center"
-        android:textSize="16sp"
-        android:textColor="#cccccc"/>
+        android:textSize="16sp"/>
 
 </LinearLayout>

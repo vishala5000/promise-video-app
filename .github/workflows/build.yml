@@ -21,23 +21,21 @@ jobs:
 
       - name: Install Gradle
         run: |
-          echo "Installing Gradle 8.2..."
           wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
           unzip -q gradle-8.2-bin.zip
           export PATH=$PATH:$PWD/gradle-8.2/bin
+          echo "Gradle version:"
           gradle --version
 
       - name: Create Android Project Structure
         run: |
           echo "🏗️ Creating complete Android project..."
           
-          # Create directory structure
           mkdir -p app/src/main/java/com/vishala/promisevideoapp
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/values
           mkdir -p app/libs
           
-          # Create settings.gradle.kts
           cat > settings.gradle.kts << 'EOF'
           pluginManagement {
               repositories {
@@ -57,7 +55,6 @@ jobs:
           include(":app")
           EOF
           
-          # Create root build.gradle.kts
           cat > build.gradle.kts << 'EOF'
           plugins {
               id("com.android.application") version "8.2.0" apply false
@@ -65,7 +62,6 @@ jobs:
           }
           EOF
           
-          # Create gradle.properties
           cat > gradle.properties << 'EOF'
           org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
           android.useAndroidX=true
@@ -73,7 +69,6 @@ jobs:
           android.nonTransitiveRClass=true
           EOF
           
-          # Create app/build.gradle.kts
           cat > app/build.gradle.kts << 'EOF'
           plugins {
               id("com.android.application")
@@ -192,32 +187,48 @@ jobs:
           </resources>
           EOF
 
-      - name: Build Debug APK
+      - name: Build Debug APK (SHOW FULL OUTPUT)
         run: |
           echo "🔨 Building APK with Gradle..."
           export PATH=$PATH:$PWD/gradle-8.2/bin
           
-          gradle clean assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+          echo "=========================================="
+          echo "RUNNING: gradle clean assembleDebug"
+          echo "=========================================="
+          
+          gradle clean assembleDebug --no-daemon --stacktrace 2>&1
           BUILD_EXIT_CODE=$?
+          
+          echo "=========================================="
+          echo "Build exit code: $BUILD_EXIT_CODE"
+          echo "=========================================="
           
           if [ $BUILD_EXIT_CODE -ne 0 ]; then
             echo "❌ BUILD FAILED!"
-            echo "Last 200 lines:"
-            tail -n 200 build.log
             exit 1
           fi
           
-          echo "✅ Build successful"
+          echo "✅ Build completed successfully"
 
       - name: Find and Upload APK
         run: |
-          echo "🔍 Searching for APK..."
-          find . -name "*.apk" -type f
+          echo "🔍 Searching for APK files..."
+          echo ""
+          echo "All APK files in workspace:"
+          find . -name "*.apk" -type f -exec ls -lh {} \;
+          echo ""
+          
+          echo "Contents of app/build/outputs:"
+          find app/build/outputs -type f 2>/dev/null || echo "No outputs directory"
+          echo ""
           
           APK_PATH=$(find . -name "*.apk" -type f | head -n 1)
           
           if [ -z "$APK_PATH" ]; then
             echo "❌ No APK found!"
+            echo ""
+            echo "Full directory tree of app/build:"
+            find app/build -type f 2>/dev/null || echo "No app/build directory"
             exit 1
           fi
           

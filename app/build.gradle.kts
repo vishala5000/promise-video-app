@@ -19,8 +19,6 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // CRITICAL: Forces APK generation in CI without a production keystore
-            signingConfig = signingConfigs.getByName("debug")
         }
     }
     
@@ -32,13 +30,6 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-
-    // Prevent packaging conflicts with the FFmpeg AAR
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
 }
 
 dependencies {
@@ -46,7 +37,5 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    
-    // Local FFmpeg Kit AAR
     implementation(files("libs/ffmpeg-kit-full-7.1.7-arm64-v8a-x86_64.aar"))
 }

@@ -19,12 +19,16 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // CRITICAL FIX: Use debug signing config for CI to ensure the APK is actually generated
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
+    
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    
     kotlinOptions {
         jvmTarget = "17"
     }
@@ -36,6 +40,6 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     
-    // Local FFmpeg Kit AAR as requested
+    // Local FFmpeg Kit AAR
     implementation(files("libs/ffmpeg-kit-full-7.1.7-arm64-v8a-x86_64.aar"))
 }

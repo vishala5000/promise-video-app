@@ -1,1 +1,5 @@
-
+<resources>
+    <string name="app_name">Promise Video App</string>
+    <string name="generate">Generate Videos</string>
+    <string name="hint_count">How many? (Leave blank for ALL unique)</string>
+</resources>
